@@ -24,6 +24,11 @@ import org.apache.zookeeper.server.auth.DigestAuthenticationProvider;
 public class CreateNodeSyncAuth implements Watcher {
 
 	private static ZooKeeper zookeeper;
+	/**
+	 * 当网络环境不好的时候，会导致zookeeper客户端断线重连，这样的话就会造成 createNode 执行多次，
+	 * 加入这个变量，当执行完成一次的时候就不会造成多次执行的情况
+	 */
+	private static boolean isDone = false;
 	
 	public static void main(String[] args) {
 		try {
@@ -40,7 +45,7 @@ public class CreateNodeSyncAuth implements Watcher {
 	public void process(WatchedEvent event) {
 		System.out.println("事件输出"+ event);
 		if(event.getState()==KeeperState.SyncConnected) {
-			if(event.getType() == EventType.None && null == event.getPath()) {
+			if(!isDone && event.getType() == EventType.None && null == event.getPath()) {
 				createNode();
 			}
 		}
@@ -68,6 +73,9 @@ public class CreateNodeSyncAuth implements Watcher {
 			aclList.add(aclDigest);
 			String path = zookeeper.create("/node_3", "node1".getBytes(), aclList, CreateMode.PERSISTENT);
 			System.out.println("return path: " + path);
+			
+			//已经执行完了
+			isDone = true;
 		} catch (KeeperException e) {
 			e.printStackTrace();
 		} catch (InterruptedException e) {
@@ -79,3 +87,4 @@ public class CreateNodeSyncAuth implements Watcher {
 	}
 
 }
+
